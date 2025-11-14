@@ -9,7 +9,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 # ============================
 # BOT SETTINGS
 # ============================
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Put your token in Render env
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # From Render environment
 ADMIN_ID = int(os.getenv("ADMIN_ID"))  # Your Telegram ID
 allowed_users = {ADMIN_ID}
 
