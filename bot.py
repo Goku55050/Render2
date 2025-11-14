@@ -1,4 +1,4 @@
-import os
+import time
 import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -7,37 +7,30 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 # BOT SETTINGS
 # ============================
 BOT_TOKEN = "8573740591:AAFcvHHLyp9S9JoQMM3Em6vPsXoG_ZB4Cd0"
-
-# ADMIN ID
 ADMIN_ID = 6430768414
-
-# Allowed users list
 allowed_users = {ADMIN_ID}
 
-
 # ============================
-# CHECK ACCESS
+# ACCESS CHECK
 # ============================
 def is_allowed(user_id):
     return user_id in allowed_users or user_id == ADMIN_ID
 
-
 # ============================
-# START MESSAGE
+# START COMMAND
 # ============================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 **Welcome to Ares Premium Bot 🥂**\n\n"
-        "Use /commands to see available tools."
+        "Use /commands to see all features."
     )
 
-
 # ============================
-# COMMANDS LIST
+# COMMAND LIST
 # ============================
 async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
-        "📜 **Ares Premium Command List**\n\n"
+        "📜 **Ares Premium Bot Commands**\n\n"
         "/start – Welcome message\n"
         "/commands – Show command list\n"
         "/lookup <number> – Phone lookup\n"
@@ -47,18 +40,16 @@ async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(msg)
 
-
 # ============================
 # LOOKUP COMMAND
 # ============================
 async def lookup(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
-
     if not is_allowed(user_id):
         return await update.message.reply_text("⛔ You are not authorized.")
 
     if len(context.args) == 0:
-        return await update.message.reply_text("❗ Usage: `/lookup 9876543210`", parse_mode="Markdown")
+        return await update.message.reply_text("❗ Usage: `/lookup 9876543210`")
 
     number = context.args[0]
     url = f"https://veerulookup.onrender.com/search_phone?number={number}"
@@ -66,87 +57,72 @@ async def lookup(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         r = requests.get(url, timeout=10)
         data = r.json()
-
         text = "📞 **Lookup Result**\n\n"
         for item in data.get("result", []):
             for key, value in item.items():
                 text += f"**{key}:** `{value}`\n"
-
         if len(text) > 4000:
-            text = text[:3990] + "\n\n⚠️ Result trimmed (Telegram limit)."
-
-        await update.message.reply_text(text, parse_mode="Markdown")
-
+            text = text[:3990] + "\n\n⚠️ Result trimmed."
+        await update.message.reply_text(text)
     except Exception as e:
-        await update.message.reply_text(f"❌ Lookup failed:\n`{e}`", parse_mode="Markdown")
-
+        await update.message.reply_text(f"❌ Lookup failed:\n`{e}`")
 
 # ============================
-# ADD USER
+# USER MANAGEMENT
 # ============================
 async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != ADMIN_ID:
         return await update.message.reply_text("⛔ Only admin can add users.")
-
     if len(context.args) == 0:
-        return await update.message.reply_text("❗ Usage: `/adduser 123456789`", parse_mode="Markdown")
-
+        return await update.message.reply_text("❗ Usage: `/adduser 123456789`")
     try:
         uid = int(context.args[0])
         allowed_users.add(uid)
-        await update.message.reply_text(f"✅ User `{uid}` added.", parse_mode="Markdown")
+        await update.message.reply_text(f"✅ User `{uid}` added.")
     except:
         await update.message.reply_text("❌ Invalid user ID.")
 
-
-# ============================
-# REMOVE USER
-# ============================
 async def remove_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != ADMIN_ID:
         return await update.message.reply_text("⛔ Only admin can remove users.")
-
     if len(context.args) == 0:
-        return await update.message.reply_text("❗ Usage: `/removeuser 123456789`", parse_mode="Markdown")
-
+        return await update.message.reply_text("❗ Usage: `/removeuser 123456789`")
     try:
         uid = int(context.args[0])
         allowed_users.discard(uid)
-        await update.message.reply_text(f"🗑 User `{uid}` removed.", parse_mode="Markdown")
+        await update.message.reply_text(f"🗑 User `{uid}` removed.")
     except:
         await update.message.reply_text("❌ Invalid user ID.")
 
-
-# ============================
-# SHOW USERS
-# ============================
 async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != ADMIN_ID:
         return await update.message.reply_text("⛔ Only admin allowed.")
-
     text = "👤 **Allowed Users:**\n\n"
     for u in allowed_users:
         text += f"- `{u}`\n"
-
-    await update.message.reply_text(text, parse_mode="Markdown")
-
+    await update.message.reply_text(text)
 
 # ============================
-# MAIN BOT RUNNER
+# BOT RUNNER WITH RECONNECT
 # ============================
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    while True:
+        try:
+            app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("commands", commands))
-    app.add_handler(CommandHandler("lookup", lookup))
-    app.add_handler(CommandHandler("adduser", add_user))
-    app.add_handler(CommandHandler("removeuser", remove_user))
-    app.add_handler(CommandHandler("users", list_users))
+            app.add_handler(CommandHandler("start", start))
+            app.add_handler(CommandHandler("commands", commands))
+            app.add_handler(CommandHandler("lookup", lookup))
+            app.add_handler(CommandHandler("adduser", add_user))
+            app.add_handler(CommandHandler("removeuser", remove_user))
+            app.add_handler(CommandHandler("users", list_users))
 
-    print("✅ Bot Running...")
-    app.run_polling()
-
+            print("✅ Bot Running...")
+            app.run_polling()
+        except Exception as e:
+            print(f"❌ Bot crashed: {e}")
+            print("⏳ Restarting in 5 seconds...")
+            time.sleep(5)  # Wait 5 sec before restarting
 
 if __name__ == "__main__":
     main()
