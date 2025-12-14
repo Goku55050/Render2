@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: ares-insta
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers=2 --threads=4 --timeout=120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: FLASK_ENV
+        value: production
+    healthCheckPath: /api/v1/status
+    autoDeploy: true
+    plan: free
