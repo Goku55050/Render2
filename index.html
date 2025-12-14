@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ brand.name }} - Distributed IP Scraping</title>
+    <style>
+        :root {
+            --ares-red: #DC2626;
+            --ares-dark: #0A0A0A;
+            --ares-gray: #1F2937;
+            --ares-light: #F3F4F6;
+            --ares-green: #10B981;
+            --ares-blue: #3B82F6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0A0A0A 0%, #1F2937 100%);
+            color: var(--ares-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .terminal {
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid var(--ares-red);
+            border-radius: 10px;
+            padding: 30px;
+            margin: 20px auto;
+            box-shadow: 0 0 40px rgba(220, 38, 38, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid var(--ares-red);
+            padding-bottom: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .ares-title {
+            color: var(--ares-red);
+            font-size: 2.8em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            font-weight: 900;
+            text-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+        }
+        
+        .tagline {
+            color: var(--ares-blue);
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .ip-display {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid var(--ares-blue);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        .ip-address {
+            font-family: 'Courier New', monospace;
+            font-size: 1.5em;
+            color: var(--ares-blue);
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        
+        .ip-status {
+            color: var(--ares-green);
+            font-size: 0.9em;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--ares-green);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .api-section {
+            margin: 30px 0;
+        }
+        
+        .section-title {
+            color: var(--ares-red);
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #374151;
+        }
+        
+        .feature-card {
+            background: rgba(31, 41, 55, 0.6);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--ares-blue);
+        }
+        
+        .feature-title {
+            color: var(--ares-blue);
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-icon {
+            color: var(--ares-green);
+            font-size: 1.5em;
+        }
+        
+        .test-panel {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--ares-blue);
+            border-radius: 8px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .test-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--ares-blue);
+            color: white;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+        }
+        
+        .ares-button {
+            background: linear-gradient(135deg, var(--ares-blue) 0%, #1D4ED8 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+        }
+        
+        .ares-button.red {
+            background: linear-gradient(135deg, var(--ares-red) 0%, #B91C1C 100%);
+        }
+        
+        .ares-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .ares-button.red:hover {
+            box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
+        }
+        
+        .response-area {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: var(--ares-blue);
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #4B5563;
+            border-top-color: var(--ares-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stat-card {
+            background: rgba(31, 41, 55, 0.5);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #374151;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--ares-blue);
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #9CA3AF;
+            font-size: 0.9em;
+        }
+        
+        .instructions {
+            background: rgba(31, 41, 55, 0.5);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid var(--ares-green);
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #374151;
+            color: #6B7280;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .ares-title {
+                font-size: 2em;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .test-input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="terminal">
+            <div class="header">
+                <h1 class="ares-title">{{ brand.name }}</h1>
+                <p class="tagline">{{ brand.tagline }}</p>
+                
+                <div class="ip-display">
+                    <div>Your IP Address:</div>
+                    <div class="ip-address" id="userIp">{{ status.your_ip }}</div>
+                    <div class="ip-status" id="ipStatus">
+                        {{ '✓ Added to distributed scraping pool' if status.ip_added_to_pool else 'Processing...' }}
+                    </div>
+                </div>
+                
+                <div class="status-badge">
+                    {{ brand.status }}
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h3 style="color: var(--ares-green); margin-bottom: 15px;">How It Works:</h3>
+                <ol>
+                    <li>Your IP address (<strong>{{ status.your_ip }}</strong>) is automatically detected</li>
+                    <li>Your IP is added to our distributed scraping pool</li>
+                    <li>When you make API requests, they use YOUR IP address</li>
+                    <li>Other users benefit from your IP in the pool</li>
+                    <li>You benefit from other users' IPs</li>
+                </ol>
+                <p style="margin-top: 15px; color: #9CA3AF; font-size: 0.9em;">
+                    ⚠️ This is a community-powered system. Your IP is only used for public Instagram scraping.
+                </p>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Your IP Status</div>
+                    <div class="stat-value">{{ 'ACTIVE' if status.ip_added_to_pool else 'PENDING' }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total IPs in Pool</div>
+                    <div class="stat-value">{{ status.proxy_pool_stats.total_proxies if status.proxy_pool_stats else 0 }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">User IPs</div>
+                    <div class="stat-value">{{ status.proxy_pool_stats.user_ips if status.proxy_pool_stats else 0 }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Success Rate</div>
+                    <div class="stat-value">{{ status.proxy_pool_stats.success_rate if status.proxy_pool_stats else '0%' }}</div>
+                </div>
+            </div>
+            
+            <div class="api-section">
+                <h2 class="section-title">DISTRIBUTED API ENDPOINTS</h2>
+                
+                <div class="feature-card">
+                    <div class="feature-title">
+                        <span class="feature-icon">🌐</span>
+                        <span>Profile Lookup (Uses Your IP)</span>
+                    </div>
+                    <div class="code-block">
+                        GET /api/v1/lookup/{username}
+                    </div>
+                    <p>Extracts Instagram data using YOUR IP address automatically.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-title">
+                        <span class="feature-icon">🔍</span>
+                        <span>Your IP Information</span>
+                    </div>
+                    <div class="code-block">
+                        GET /api/v1/my_ip
+                    </div>
+                    <p>Shows your IP details and pool status.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-title">
+                        <span class="feature-icon">🔄</span>
+                        <span>Pool Statistics</span>
+                    </div>
+                    <div class="code-block">
+                        GET /api/v1/proxy_pool
+                    </div>
+                    <p>View distributed IP pool statistics.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-title">
+                        <span class="feature-icon">📊</span>
+                        <span>System Status</span>
+                    </div>
+                    <div class="code-block">
+                        GET /api/v1/status
+                    </div>
+                    <p>Check system health with your IP info.</p>
+                </div>
+            </div>
+            
+            <div class="test-panel">
+                <h2 class="section-title">LIVE TEST WITH YOUR IP</h2>
+                
+                <div class="input-group">
+                    <input type="text" class="test-input" id="testUsername" 
+                           placeholder="Enter Instagram username (e.g., instagram)" 
+                           value="instagram">
+                    
+                    <button class="ares-button" onclick="testLookup()">
+                        TEST WITH YOUR IP
+                    </button>
+                    
+                    <button class="ares-button red" onclick="getMyIp()">
+                        SHOW MY IP
+                    </button>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>[ARES] Scraping with your IP: <span id="loadingIp">{{ status.your_ip }}</span>...</p>
+                </div>
+                
+                <div class="response-area" id="responseArea">
+                    <div style="color: var(--ares-green); margin-bottom: 15px; font-weight: bold;" id="responseTitle">
+                        API Response:
+                    </div>
+                    <div class="code-block" id="responseJson"></div>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>{{ brand.name }} - Community-Powered Distributed Scraping</p>
+                <p style="margin-top: 10px; color: #9CA3AF; font-size: 0.8em;">
+                    <span style="color: var(--ares-blue);">🌐</span> 
+                    Your IP: <strong>{{ status.your_ip }}</strong> is contributing to the network
+                </p>
+                <p style="margin-top: 10px; font-size: 0.8em;">
+                    Rate limit: 200 requests/day, 50 requests/hour per IP
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Display user IP
+        document.getElementById('userIp').textContent = '{{ status.your_ip }}';
+        document.getElementById('loadingIp').textContent = '{{ status.your_ip }}';
+        
+        async function testLookup() {
+            const username = document.getElementById('testUsername').value.trim();
+            const loading = document.getElementById('loading');
+            const responseArea = document.getElementById('responseArea');
+            const responseJson = document.getElementById('responseJson');
+            const responseTitle = document.getElementById('responseTitle');
+            
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+            
+            // Show loading with IP
+            loading.style.display = 'block';
+            responseArea.style.display = 'none';
+            
+            try {
+                const response = await fetch(`/api/v1/lookup/${username}`);
+                const data = await response.json();
+                
+                // Format JSON for display
+                responseJson.textContent = JSON.stringify(data, null, 2);
+                
+                // Update title with IP info
+                if (data.meta && data.meta.client_ip_used) {
+                    responseTitle.innerHTML = `API Response (Using IP: <span style="color: var(--ares-blue);">${data.meta.client_ip_used}</span>):`;
+                }
+                
+                // Show response
+                loading.style.display = 'none';
+                responseArea.style.display = 'block';
+                
+                // Auto-scroll to response
+                responseArea.scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                responseJson.textContent = `Error: ${error.message}`;
+                responseArea.style.display = 'block';
+            }
+        }
+        
+        async function getMyIp() {
+            const loading = document.getElementById('loading');
+            const responseArea = document.getElementById('responseArea');
+            const responseJson = document.getElementById('responseJson');
+            const responseTitle = document.getElementById('responseTitle');
+            
+            loading.style.display = 'block';
+            responseArea.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/v1/my_ip');
+                const data = await response.json();
+                
+                responseJson.textContent = JSON.stringify(data, null, 2);
+                responseTitle.textContent = 'Your IP Information:';
+                
+                // Update IP display
+                if (data.data && data.data.your_ip) {
+                    document.getElementById('userIp').textContent = data.data.your_ip;
+                    document.getElementById('loadingIp').textContent = data.data.your_ip;
+                    document.getElementById('ipStatus').textContent = '✓ Added to distributed scraping pool';
+                    document.getElementById('ipStatus').style.color = 'var(--ares-green)';
+                }
+                
+                loading.style.display = 'none';
+                responseArea.style.display = 'block';
+                responseArea.scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                responseJson.textContent = `Error: ${error.message}`;
+                responseArea.style.display = 'block';
+            }
+        }
+        
+        // Auto-get IP info on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(getMyIp, 1000);
+        });
+        
+        // Periodically update pool stats
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/v1/proxy_pool');
+                const data = await response.json();
+                if (data.success) {
+                    // Update stats display
+                    console.log('Pool updated:', data.data);
+                }
+            } catch (error) {
+                console.log('Pool update failed:', error);
+            }
+        }, 30000); // Every 30 seconds
+    </script>
+</body>
+</html>
